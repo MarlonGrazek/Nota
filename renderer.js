@@ -71,7 +71,6 @@ zoomIndicator.addEventListener('click', () => {
     applyZoom();
 });
 
-
 // --- Kernfunktionen ---
 
 const createId = () => `file_${Date.now()}_${Math.random()}`;
