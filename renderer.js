@@ -1,71 +1,177 @@
 // renderer.js
 
+// --- DOM-Elemente holen ---
 const textarea = document.querySelector('.editor-textarea');
+const tabBar = document.querySelector('.tab-bar');
 
-// Der Zustand der aktuell bearbeiteten Datei
-const editorState = {
-  filePath: null,
-  originalContent: '',
-};
+// --- Globale Zustandsverwaltung ---
+let openFiles = [];
+let activeFileId = null;
 
-/**
- * Aktualisiert den gesamten Zustand des Editors.
- * Wird nach dem Öffnen oder Speichern einer Datei aufgerufen.
- * @param {string} newContent Der neue Textinhalt.
- * @param {string} newFilePath Der neue Dateipfad.
- */
-function updateEditorState(newContent, newFilePath) {
-  textarea.value = newContent;
-  editorState.originalContent = textarea.value; // Normalisierten Wert als "sauber" speichern
-  editorState.filePath = newFilePath;
-  updateTitle();
+// --- Kernfunktionen ---
+
+const createId = () => `file_${Date.now()}_${Math.random()}`;
+
+function renderTabs() {
+  tabBar.innerHTML = '';
+  openFiles.forEach(file => {
+    const tabItem = document.createElement('div');
+    tabItem.className = 'tab-item';
+    tabItem.dataset.fileId = file.id;
+    if (file.id === activeFileId) tabItem.classList.add('active');
+    
+    const isDirty = file.currentContent !== file.originalContent;
+    const dirtyMarker = isDirty ? '<span class="tab-dirty-marker">•</span>' : '';
+    const fileName = file.filePath ? file.filePath.split(/[\\/]/).pop() : 'Neue Datei';
+    
+    tabItem.innerHTML = `${dirtyMarker}<span class="tab-filename">${fileName}</span><div class="tab-close-button">✕</div>`;
+    
+    tabItem.addEventListener('click', () => setActiveFile(file.id));
+    tabItem.querySelector('.tab-close-button').addEventListener('click', (event) => {
+        event.stopPropagation(); 
+        closeFile(file.id);
+    });
+    
+    tabBar.appendChild(tabItem);
+  });
+  updateWindowTitle();
 }
 
-/**
- * Aktualisiert den Fenstertitel basierend auf dem aktuellen Zustand.
- */
-function updateTitle() {
-  const isDirty = textarea.value !== editorState.originalContent;
-  const dirtyMarker = isDirty ? '• ' : ''; // Ein Punkt ist moderner als ein Stern
-  const fileName = editorState.filePath ? editorState.filePath.split(/[\\/]/).pop() : 'Unbenannt';
-  
-  window.electronAPI.sendTitle(`${dirtyMarker}${fileName} - Nota`);
+function displayActiveFileContent() {
+  const activeFile = openFiles.find(f => f.id === activeFileId);
+  if (activeFile) {
+    textarea.value = activeFile.currentContent;
+    textarea.focus();
+  } else {
+    textarea.value = '';
+  }
 }
 
+function setActiveFile(fileId) {
+  activeFileId = fileId;
+  displayActiveFileContent();
+  renderTabs();
+}
+
+function addNewFile(filePath = null, content = '') {
+  const newFile = { id: createId(), filePath, originalContent: content, currentContent: content };
+  openFiles.push(newFile);
+  setActiveFile(newFile.id);
+  return newFile;
+}
+
+async function closeFile(fileIdToClose) {
+  const fileToClose = openFiles.find(f => f.id === fileIdToClose);
+  if (!fileToClose) return;
+
+  const isDirty = fileToClose.currentContent !== fileToClose.originalContent;
+  if (isDirty) {
+    const result = await window.electronAPI.showConfirmDialog({
+      type: 'question',
+      buttons: ['Schließen', 'Abbrechen'],
+      defaultId: 1,
+      title: 'Ungespeicherte Änderungen',
+      message: `Möchten Sie die Änderungen an "${fileToClose.filePath?.split(/[\\/]/).pop() || 'Neue Datei'}" wirklich verwerfen?`
+    });
+    if (result.response === 1) return;
+  }
+
+  const fileIndex = openFiles.findIndex(f => f.id === fileIdToClose);
+  openFiles.splice(fileIndex, 1);
+
+  if (openFiles.length === 0) {
+    activeFileId = null;
+    displayActiveFileContent();
+    renderTabs();
+    return;
+  }
+
+  if (activeFileId === fileIdToClose) {
+    const newActiveIndex = Math.max(0, fileIndex - 1);
+    setActiveFile(openFiles[newActiveIndex].id);
+  } else {
+    renderTabs();
+  }
+}
+
+function updateWindowTitle() {
+    const activeFile = openFiles.find(f => f.id === activeFileId);
+    let title = "Nota";
+    if(activeFile) {
+        const fileName = activeFile.filePath ? activeFile.filePath.split(/[\\/]/).pop() : 'Neue Datei';
+        const isDirty = activeFile.currentContent !== activeFile.originalContent;
+        title = `${isDirty ? '• ' : ''}${fileName} - Nota`;
+    }
+    window.electronAPI.sendTitle(title);
+}
+
+function initializeEditor() {
+    if (openFiles.length === 0) {
+        addNewFile();
+    }
+}
 
 // --- Event Listener für Nutzerinteraktionen ---
 
-// Bei jeder Texteingabe den Titel aktualisieren.
-textarea.addEventListener('input', updateTitle);
-
-
-// --- API Listener für Anfragen vom Main-Prozess ---
-
-// Der Main-Prozess fordert den Zustand an, bevor eine neue Datei geöffnet wird.
-window.electronAPI.onRequestEditorStateForOpen(() => {
-  window.electronAPI.sendEditorStateForOpen({
-    isDirty: textarea.value !== editorState.originalContent,
-  });
+textarea.addEventListener('input', () => {
+  const activeFile = openFiles.find(f => f.id === activeFileId);
+  if (activeFile) {
+    activeFile.currentContent = textarea.value;
+    renderTabs();
+  }
 });
 
-// Der Main-Prozess fordert den Inhalt zum Speichern an.
-window.electronAPI.onRequestEditorContentForSave(() => {
-  window.electronAPI.sendEditorContentForSave({
-    content: textarea.value,
-    filePath: editorState.filePath,
-  });
-});
+document.getElementById('open-file-button').addEventListener('click', () => window.electronAPI.startFileOpen());
+document.getElementById('save-file-button').addEventListener('click', () => window.electronAPI.startFileSave());
+document.getElementById('minimize-button').addEventListener('click', () => window.electronAPI.minimizeWindow());
+document.getElementById('maximize-button').addEventListener('click', () => window.electronAPI.maximizeWindow());
+document.getElementById('close-button').addEventListener('click', () => window.electronAPI.closeWindow());
+document.getElementById('new-tab-button').addEventListener('click', () => addNewFile());
 
-// Main hat eine Datei erfolgreich geöffnet.
+// --- API Listener für Anfragen/Daten vom Main-Prozess ---
+
 window.electronAPI.onFileOpened((content, filePath) => {
-  updateEditorState(content, filePath);
+    const existingFile = openFiles.find(f => f.filePath === filePath);
+    if(existingFile) {
+        setActiveFile(existingFile.id);
+    } else {
+        const firstFile = openFiles[0];
+        if (openFiles.length === 1 && firstFile.filePath === null && firstFile.currentContent === '') {
+            firstFile.filePath = filePath;
+            firstFile.originalContent = content;
+            firstFile.currentContent = content;
+            setActiveFile(firstFile.id);
+        } else {
+            addNewFile(filePath, content);
+        }
+    }
 });
-
-// Main hat eine Datei erfolgreich gespeichert.
 window.electronAPI.onFileSaved((content, filePath) => {
-  updateEditorState(content, filePath);
+    const activeFile = openFiles.find(f => f.id === activeFileId);
+    if (activeFile) {
+        activeFile.filePath = filePath;
+        activeFile.originalContent = content;
+        activeFile.currentContent = content;
+        renderTabs();
+    }
 });
 
+window.electronAPI.onRequestEditorContentForSave(() => {
+    const activeFile = openFiles.find(f => f.id === activeFileId);
+    if (activeFile) {
+        window.electronAPI.sendEditorContentForSave({
+            content: activeFile.currentContent,
+            filePath: activeFile.filePath,
+        });
+    }
+});
 
-// Initialen Titel beim Start setzen.
-updateTitle();
+window.electronAPI.onCheckUnsavedChanges(() => {
+  // Prüft, ob mindestens eine Datei ungespeicherte Änderungen hat
+  const hasUnsavedChanges = openFiles.some(file => file.currentContent !== file.originalContent);
+  window.electronAPI.sendUnsavedChangesResponse(hasUnsavedChanges);
+});
+
+// --- Start ---
+// DIESE ZEILE STELLT SICHER, DASS BEIM START EIN TAB GEÖFFNET WIRD.
+initializeEditor();

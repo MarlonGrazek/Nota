@@ -6,6 +6,7 @@ const fs = require('node:fs');
 
 // Globale Referenz auf das Hauptfenster, um es nicht zu verlieren.
 let mainWindow;
+let forceClose = false;
 
 /**
  * Erstellt das Hauptfenster der Anwendung.
@@ -14,9 +15,20 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    // --- HIER DIE ÄNDERUNGEN ---
+    frame: false, // Entfernt den kompletten Fensterrahmen
+    titleBarStyle: 'hidden', // Versteckt die Titelleiste, behält aber die Fenster-Controls
+    // -------------------------
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+  });
+
+  mainWindow.on('close', (event) => {
+    if (!forceClose) {
+      event.preventDefault(); // Verhindert das sofortige Schließen
+      mainWindow.webContents.send('check-unsaved-changes'); // Fragt den Renderer
+    }
   });
 
   mainWindow.loadFile('index.html');
@@ -26,8 +38,13 @@ function createWindow() {
  * Behandelt den "Datei öffnen"-Vorgang.
  * Fordert zuerst den Zustand vom Renderer an, um auf ungespeicherte Änderungen zu prüfen.
  */
-function handleFileOpen() {
-  mainWindow.webContents.send('request-editor-state-for-open');
+async function handleFileOpen() {
+  const { canceled, filePaths } = await dialog.showOpenDialog({});
+  if (!canceled && filePaths.length > 0) {
+    const filePath = filePaths[0];
+    const content = fs.readFileSync(filePath, 'utf8');
+    mainWindow.webContents.send('file-opened', content, filePath);
+  }
 }
 
 /**
@@ -55,7 +72,7 @@ function createMainMenu() {
   ];
 
   const menu = Menu.buildFromTemplate(menuTemplate);
-  Menu.setApplicationMenu(menu);
+  Menu.setApplicationMenu(null);
 }
 
 // --- App Lifecycle ---
@@ -75,29 +92,6 @@ app.on('window-all-closed', () => {
 
 
 // --- IPC-Kommunikation ---
-
-// Empfängt den Zustand vom Renderer und entscheidet, ob eine Datei geöffnet werden darf.
-ipcMain.on('editor-state-for-open', async (event, { isDirty }) => {
-  if (isDirty) {
-    const choice = await dialog.showMessageBox(mainWindow, {
-      type: 'question',
-      buttons: ['Änderungen verwerfen', 'Abbrechen'],
-      defaultId: 1,
-      title: 'Ungespeicherte Änderungen',
-      message: 'Sie haben ungespeicherte Änderungen. Möchten Sie diese wirklich verwerfen?',
-    });
-
-    if (choice.response === 1) return; // 1 = Abbrechen
-  }
-
-  // Dialog zum Öffnen der Datei anzeigen
-  const { canceled, filePaths } = await dialog.showOpenDialog({});
-  if (!canceled && filePaths.length > 0) {
-    const filePath = filePaths[0];
-    const content = fs.readFileSync(filePath, 'utf8');
-    mainWindow.webContents.send('file-opened', content, filePath);
-  }
-});
 
 // Empfängt den Inhalt zum Speichern vom Renderer.
 ipcMain.on('editor-content-for-save', async (event, { content, filePath }) => {
@@ -124,4 +118,55 @@ ipcMain.on('editor-content-for-save', async (event, { content, filePath }) => {
 ipcMain.on('set-title', (event, title) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   win.setTitle(title);
+});
+
+ipcMain.on('window-minimize', () => {
+  mainWindow.minimize();
+});
+
+ipcMain.on('window-maximize', () => {
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+});
+
+ipcMain.on('window-close', () => {
+  mainWindow.close();
+});
+
+ipcMain.on('start-file-open', () => {
+  handleFileOpen();
+});
+
+ipcMain.on('start-file-save', () => {
+  handleFileSave();
+});
+
+ipcMain.handle('show-confirm-dialog', async (event, options) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showMessageBox(window, options);
+  return result;
+});
+
+ipcMain.on('unsaved-changes-response', async (event, hasUnsavedChanges) => {
+  if (hasUnsavedChanges) {
+    const choice = await dialog.showMessageBox(mainWindow, {
+      type: 'question',
+      buttons: ['Änderungen verwerfen', 'Abbrechen'],
+      defaultId: 1,
+      title: 'Ungespeicherte Änderungen',
+      message: 'Sie haben ungespeicherte Änderungen. Möchten Sie wirklich beenden?'
+    });
+
+    if (choice.response === 0) { // 0 = Änderungen verwerfen
+      forceClose = true;
+      mainWindow.close();
+    }
+  } else {
+    // Wenn keine Änderungen vorhanden sind, Schließen erzwingen
+    forceClose = true;
+    mainWindow.close();
+  }
 });
