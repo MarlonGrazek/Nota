@@ -20,4 +20,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   onCheckUnsavedChanges: (callback) => ipcRenderer.on('check-unsaved-changes', callback),
   sendUnsavedChangesResponse: (isDirty) => ipcRenderer.send('unsaved-changes-response', isDirty),
+
+  onWindowStateChange: (callback) => ipcRenderer.on('window-state-changed', (_event, state) => callback(state)), // <-- NEU
 });

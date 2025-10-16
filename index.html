@@ -1,41 +1,100 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <meta charset="UTF-8">
     <title>Nota</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/one-dark.min.css">
-    
+
     <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
+</head>
+
+<body>
 
     <div class="title-bar">
-      <div class="logo-area"><div class="logo-placeholder"></div></div>
-      <div class="tab-bar"></div>
-      <div class="new-tab-button" id="new-tab-button" title="Neue Datei">+</div>
-      <div class="title-bar-spacer"></div>
-      <div class="window-controls">
-        <div class="control-button" id="minimize-button" title="Minimieren">–</div>
-        <div class="control-button" id="maximize-button" title="Maximieren">◻</div>
-        <div class="control-button" id="close-button" title="Schließen">✕</div>
-      </div>
+        <div class="logo-area">
+            <div class="logo-placeholder">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
+                </svg>
+            </div>
+        </div>
+        <div class="tab-bar"></div>
+        <div class="new-tab-button" id="new-tab-button" title="Neue Datei">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </div>
+        <div class="title-bar-spacer"></div>
+        <div class="window-controls">
+            <div class="control-button" id="minimize-button" title="Minimieren">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </div>
+            <div class="control-button" id="maximize-button" title="Maximieren">
+                <svg class="icon-maximize-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="15 3 21 3 21 9" />
+                    <polyline points="9 21 3 21 3 15" />
+                    <line x1="21" y1="3" x2="14" y2="10" />
+                    <line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+                <svg class="icon-minimize-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <polyline points="4 14 10 14 10 20" />
+                    <polyline points="20 10 14 10 14 4" />
+                    <line x1="14" y1="10" x2="21" y2="3" />
+                    <line x1="3" y1="21" x2="10" y2="14" />
+                </svg>
+            </div>
+            <div class="control-button" id="close-button" title="Schließen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
+        </div>
     </div>
 
     <div class="main-container">
-      <div class="sidebar">
-        <div class="sidebar-icon" id="open-file-button" title="Datei öffnen"></div>
-        <div class="sidebar-icon" id="save-file-button" title="Datei speichern"></div>
-      </div>
-      <div class="content-area">
-        <div class="editor-area">
-          <textarea id="editor-container"></textarea>
+        <div class="sidebar">
+            <div class="sidebar-icon" id="open-file-button" title="Datei öffnen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z">
+                    </path>
+                </svg>
+            </div>
+            <div class="sidebar-icon" id="save-file-button" title="Datei speichern">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </div>
         </div>
-      </div>
+        <div class="content-area">
+            <div class="editor-area">
+                <textarea id="editor-container"></textarea>
+            </div>
+        </div>
     </div>
 
     <script src="renderer.js"></script>
 
-  </body>
+</body>
+
 </html>

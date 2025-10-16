@@ -47,7 +47,14 @@ function renderTabs() {
     const dirtyMarker = isDirty ? '<span class="tab-dirty-marker">•</span>' : '';
     const fileName = file.filePath ? file.filePath.split(/[\\/]/).pop() : 'Neue Datei';
     
-    tabItem.innerHTML = `${dirtyMarker}<span class="tab-filename">${fileName}</span><div class="tab-close-button">✕</div>`;
+    // NEU: SVG für den Schließen-Button
+    tabItem.innerHTML = `
+      ${dirtyMarker}
+      <span class="tab-filename">${fileName}</span>
+      <div class="tab-close-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </div>
+    `;
     
     tabItem.addEventListener('click', () => setActiveFile(file.id));
     tabItem.querySelector('.tab-close-button').addEventListener('click', (event) => {
@@ -154,6 +161,12 @@ window.electronAPI.onRequestEditorContentForSave(() => {
 window.electronAPI.onCheckUnsavedChanges(() => {
   const hasUnsavedChanges = openFiles.some(file => file.currentContent !== file.originalContent);
   window.electronAPI.sendUnsavedChangesResponse(hasUnsavedChanges);
+});
+
+window.electronAPI.onWindowStateChange((state) => {
+  const maximizeButton = document.getElementById('maximize-button');
+  // Setzt oder entfernt die Klasse 'is-maximized' basierend auf dem Zustand
+  maximizeButton.classList.toggle('is-maximized', state.maximized);
 });
 
 initializeEditor();

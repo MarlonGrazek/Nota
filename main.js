@@ -18,14 +18,27 @@ function createWindow() {
     },
   });
 
+  mainWindow.loadFile('index.html');
+  mainWindow.maximize();
+
+  // HIER IST DER FIX: Sende den initialen Zustand, nachdem das Fenster geladen ist.
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.send('window-state-changed', { maximized: true });
+  });
+
+  mainWindow.on('maximize', () => {
+    mainWindow.webContents.send('window-state-changed', { maximized: true });
+  });
+  mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send('window-state-changed', { maximized: false });
+  });
+
   mainWindow.on('close', (event) => {
     if (!forceClose) {
       event.preventDefault();
       mainWindow.webContents.send('check-unsaved-changes');
     }
   });
-
-  mainWindow.loadFile('index.html');
 }
 
 async function handleFileOpen() {
@@ -52,7 +65,6 @@ ipcMain.on('start-file-save', handleFileSave);
 
 ipcMain.on('editor-content-for-save', async (event, { content, filePath }) => {
   let finalFilePath = filePath;
-
   if (!finalFilePath) {
     const { canceled, filePath: newFilePath } = await dialog.showSaveDialog({
       title: 'Datei speichern unter',
@@ -62,7 +74,6 @@ ipcMain.on('editor-content-for-save', async (event, { content, filePath }) => {
     if (canceled) return;
     finalFilePath = newFilePath;
   }
-  
   fs.writeFileSync(finalFilePath, content);
   event.sender.send('file-saved', content, finalFilePath);
 });
