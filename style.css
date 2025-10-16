@@ -1,0 +1,32 @@
+/* style.css */
+
+/* 1. Theme-Variablen definieren (Light-Theme als Standard) */
+:root {
+  --background-primary: #ffffff;
+  --text-primary: #1e1e1e;
+  --font-family-editor: "Consolas", "Courier New", monospace;
+}
+
+/* 2. Globale Styles setzen */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-primary);
+}
+
+/* 3. Das Textfeld stylen */
+.editor-textarea {
+  width: 100vw; /* 100% der Fensterbreite */
+  height: 100vh; /* 100% der Fensterhöhe */
+  padding: 10px;
+  box-sizing: border-box; /* Padding wird in die Größe eingerechnet */
+
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family-editor);
+  font-size: 16px;
+
+  border: none; /* Kein hässlicher Rahmen */
+  outline: none; /* Kein blauer Rahmen beim Fokussieren */
+  resize: none; /* Größenänderung durch den Nutzer deaktivieren */
+}

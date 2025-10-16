@@ -1,0 +1,24 @@
+{
+  "name": "nota",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarlonGrazek/Nota.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MarlonGrazek/Nota/issues"
+  },
+  "homepage": "https://github.com/MarlonGrazek/Nota#readme",
+  "devDependencies": {
+    "electron": "^38.3.0"
+  }
+}
