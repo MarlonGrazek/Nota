@@ -1,44 +1,41 @@
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <meta charset="UTF-8">
     <title>Nota</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/one-dark.min.css">
+    
     <link rel="stylesheet" href="style.css">
-</head>
-
-<body>
+  </head>
+  <body>
 
     <div class="title-bar">
-        <div class="logo-area">
-            <div class="logo-placeholder"></div>
-        </div>
-        <div class="tab-bar">
-        </div>
-        <div class="new-tab-button" id="new-tab-button" title="Neue Datei">+</div>
-
-        <div class="title-bar-spacer"></div>
-
-        <div class="window-controls">
-            <div class="control-button" id="minimize-button" title="Minimieren">-</div>
-            <div class="control-button" id="maximize-button" title="Maximieren">◻</div>
-            <div class="control-button" id="close-button" title="Schließen">✕</div>
-        </div>
+      <div class="logo-area"><div class="logo-placeholder"></div></div>
+      <div class="tab-bar"></div>
+      <div class="new-tab-button" id="new-tab-button" title="Neue Datei">+</div>
+      <div class="title-bar-spacer"></div>
+      <div class="window-controls">
+        <div class="control-button" id="minimize-button" title="Minimieren">–</div>
+        <div class="control-button" id="maximize-button" title="Maximieren">◻</div>
+        <div class="control-button" id="close-button" title="Schließen">✕</div>
+      </div>
     </div>
 
     <div class="main-container">
-        <div class="sidebar">
-            <div class="sidebar-icon" id="open-file-button" title="Datei öffnen"></div>
-            <div class="sidebar-icon" id="save-file-button" title="Datei speichern"></div>
+      <div class="sidebar">
+        <div class="sidebar-icon" id="open-file-button" title="Datei öffnen"></div>
+        <div class="sidebar-icon" id="save-file-button" title="Datei speichern"></div>
+      </div>
+      <div class="content-area">
+        <div class="editor-area">
+          <textarea id="editor-container"></textarea>
         </div>
-        <div class="content-area">
-            <div class="editor-area">
-                <textarea class="editor-textarea" spellcheck="false"></textarea>
-            </div>
-        </div>
+      </div>
     </div>
 
     <script src="renderer.js"></script>
-</body>
 
+  </body>
 </html>

@@ -4,21 +4,15 @@ const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 
-// Globale Referenz auf das Hauptfenster, um es nicht zu verlieren.
 let mainWindow;
 let forceClose = false;
 
-/**
- * Erstellt das Hauptfenster der Anwendung.
- */
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    // --- HIER DIE ÄNDERUNGEN ---
-    frame: false, // Entfernt den kompletten Fensterrahmen
-    titleBarStyle: 'hidden', // Versteckt die Titelleiste, behält aber die Fenster-Controls
-    // -------------------------
+    width: 1200,
+    height: 800,
+    frame: false,
+    titleBarStyle: 'hidden',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -26,18 +20,14 @@ function createWindow() {
 
   mainWindow.on('close', (event) => {
     if (!forceClose) {
-      event.preventDefault(); // Verhindert das sofortige Schließen
-      mainWindow.webContents.send('check-unsaved-changes'); // Fragt den Renderer
+      event.preventDefault();
+      mainWindow.webContents.send('check-unsaved-changes');
     }
   });
 
   mainWindow.loadFile('index.html');
 }
 
-/**
- * Behandelt den "Datei öffnen"-Vorgang.
- * Fordert zuerst den Zustand vom Renderer an, um auf ungespeicherte Änderungen zu prüfen.
- */
 async function handleFileOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({});
   if (!canceled && filePaths.length > 0) {
@@ -47,101 +37,39 @@ async function handleFileOpen() {
   }
 }
 
-/**
- * Behandelt den "Datei speichern"-Vorgang.
- * Fordert den Inhalt vom Renderer an, um ihn zu speichern.
- */
 function handleFileSave() {
   mainWindow.webContents.send('request-editor-content-for-save');
 }
 
-/**
- * Erstellt und setzt das Anwendungsmenü.
- */
-function createMainMenu() {
-  const menuTemplate = [
-    {
-      label: 'Datei',
-      submenu: [
-        { label: 'Öffnen', accelerator: 'CmdOrCtrl+O', click: handleFileOpen },
-        { label: 'Speichern', accelerator: 'CmdOrCtrl+S', click: handleFileSave },
-        { type: 'separator' },
-        { label: 'Beenden', role: 'quit' },
-      ],
-    },
-  ];
-
-  const menu = Menu.buildFromTemplate(menuTemplate);
-  Menu.setApplicationMenu(null);
-}
-
-// --- App Lifecycle ---
-
-app.whenReady().then(() => {
-  createWindow();
-  createMainMenu();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+ipcMain.on('start-file-open', handleFileOpen);
+ipcMain.on('start-file-save', handleFileSave);
 
-// --- IPC-Kommunikation ---
-
-// Empfängt den Inhalt zum Speichern vom Renderer.
 ipcMain.on('editor-content-for-save', async (event, { content, filePath }) => {
   let finalFilePath = filePath;
 
-  // Wenn kein Pfad existiert, "Speichern unter"-Dialog anzeigen
   if (!finalFilePath) {
     const { canceled, filePath: newFilePath } = await dialog.showSaveDialog({
       title: 'Datei speichern unter',
       buttonLabel: 'Speichern',
       defaultPath: 'Unbenannt.txt',
     });
-
     if (canceled) return;
     finalFilePath = newFilePath;
   }
   
-  // Datei schreiben und dem Renderer den finalen Zustand zurückmelden
   fs.writeFileSync(finalFilePath, content);
   event.sender.send('file-saved', content, finalFilePath);
 });
 
-// Setzt den Fenstertitel basierend auf der Anfrage des Renderers.
 ipcMain.on('set-title', (event, title) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   win.setTitle(title);
-});
-
-ipcMain.on('window-minimize', () => {
-  mainWindow.minimize();
-});
-
-ipcMain.on('window-maximize', () => {
-  if (mainWindow.isMaximized()) {
-    mainWindow.unmaximize();
-  } else {
-    mainWindow.maximize();
-  }
-});
-
-ipcMain.on('window-close', () => {
-  mainWindow.close();
-});
-
-ipcMain.on('start-file-open', () => {
-  handleFileOpen();
-});
-
-ipcMain.on('start-file-save', () => {
-  handleFileSave();
 });
 
 ipcMain.handle('show-confirm-dialog', async (event, options) => {
@@ -159,14 +87,22 @@ ipcMain.on('unsaved-changes-response', async (event, hasUnsavedChanges) => {
       title: 'Ungespeicherte Änderungen',
       message: 'Sie haben ungespeicherte Änderungen. Möchten Sie wirklich beenden?'
     });
-
-    if (choice.response === 0) { // 0 = Änderungen verwerfen
+    if (choice.response === 0) {
       forceClose = true;
       mainWindow.close();
     }
   } else {
-    // Wenn keine Änderungen vorhanden sind, Schließen erzwingen
     forceClose = true;
     mainWindow.close();
   }
 });
+
+ipcMain.on('window-minimize', () => mainWindow.minimize());
+ipcMain.on('window-maximize', () => {
+  if (mainWindow.isMaximized()) {
+    mainWindow.unmaximize();
+  } else {
+    mainWindow.maximize();
+  }
+});
+ipcMain.on('window-close', () => mainWindow.close());
