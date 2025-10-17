@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="tab-bar"></div>
-        <div class="new-tab-button" id="new-tab-button" title="Neue Datei">
+        <div class="new-tab-button" id="new-tab-button" data-tooltip="Neue Datei">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -33,13 +33,13 @@
         </div>
         <div class="title-bar-spacer"></div>
         <div class="window-controls">
-            <div class="control-button" id="minimize-button" title="Minimieren">
+            <div class="control-button" id="minimize-button">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
             </div>
-            <div class="control-button" id="maximize-button" title="Maximieren">
+            <div class="control-button" id="maximize-button">
                 <svg class="icon-maximize-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round">
@@ -57,7 +57,7 @@
                     <line x1="3" y1="21" x2="10" y2="14" />
                 </svg>
             </div>
-            <div class="control-button" id="close-button" title="Schließen">
+            <div class="control-button" id="close-button">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -70,7 +70,7 @@
     <div class="main-container">
         <div class="sidebar">
             <div class="sidebar-top">
-                <div class="sidebar-icon" id="open-file-button" title="Datei öffnen">
+                <div class="sidebar-icon" id="open-file-button" data-tooltip="Datei öffnen" data-tooltip-placement="right">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path
@@ -78,7 +78,7 @@
                         </path>
                     </svg>
                 </div>
-                <div class="sidebar-icon" id="save-file-button" title="Datei speichern">
+                <div class="sidebar-icon" id="save-file-button" data-tooltip="Datei speichern" data-tooltip-placement="right">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -86,7 +86,7 @@
                         <polyline points="7 3 7 8 15 8"></polyline>
                     </svg>
                 </div>
-                <div class="sidebar-icon" id="search-button" title="Suchen">
+                <div class="sidebar-icon" id="search-button" data-tooltip="Suchen" data-tooltip-placement="right">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
@@ -96,7 +96,7 @@
             </div>
 
             <div class="sidebar-bottom">
-                <div class="sidebar-icon" id="settings-button" title="Einstellungen">
+                <div class="sidebar-icon" id="settings-button" data-tooltip="Einstellungen" data-tooltip-placement="right">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="lucide lucide-settings-icon lucide-settings">
@@ -119,12 +119,15 @@
             <div class="status-bar-item" id="cursor-indicator">Zeile 1, Spalte 1</div>
         </div>
         <div class="status-bar-right">
-            <div class="status-bar-item" id="zoom-indicator" title="Zoom zurücksetzen">100%</div>
+            <div class="status-bar-item" id="zoom-indicator" data-tooltip="Zoom zurücksetzen">100%</div>
         </div>
     </div>
 
     <script src="renderer.js"></script>
-
+    <script type="module">
+        import TooltipManager from './tooltip-manager.js';
+        TooltipManager.init();
+    </script>
 </body>
 
 </html>

@@ -1,0 +1,88 @@
+/* The tooltip container */
+.custom-tooltip {
+    /* Basic Styles */
+    position: fixed;
+    z-index: 10000;
+    padding: 8px 12px;
+    max-width: 300px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+
+    /* Appearance */
+    background-color: var(--background-content);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+    /* Animation & Interaction */
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* The arrow pseudo-element */
+.custom-tooltip::before {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    transform: rotate(45deg);
+    background-color: var(--background-content);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: -1;
+}
+
+/* --- Visibility and Animation States --- */
+.custom-tooltip.visible {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+/* Initial (hidden) animation states based on direction */
+.custom-tooltip[data-direction="top"] { transform: scale(0.95) translateY(5px); }
+.custom-tooltip[data-direction="bottom"] { transform: scale(0.95) translateY(-5px); }
+.custom-tooltip[data-direction="left"] { transform: scale(0.95) translateX(5px); }
+.custom-tooltip[data-direction="right"] { transform: scale(0.95) translateX(-5px); }
+
+/* --- Arrow Positioning --- */
+.custom-tooltip[data-direction="top"]::before {
+    bottom: -6px;
+    left: var(--arrow-left, 50%);
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 0 0 3px 0;
+    border-top-color: transparent;
+    border-left-color: transparent;
+}
+
+.custom-tooltip[data-direction="bottom"]::before {
+    top: -6px;
+    left: var(--arrow-left, 50%);
+    transform: translateX(-50%) rotate(45deg);
+    border-radius: 3px 0 0 0;
+    border-bottom-color: transparent;
+    border-right-color: transparent;
+}
+
+.custom-tooltip[data-direction="left"]::before {
+    right: -6px;
+    top: var(--arrow-top, 50%);
+    transform: translateY(-50%) rotate(45deg);
+    border-radius: 0 3px 0 0;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+}
+
+.custom-tooltip[data-direction="right"]::before {
+    left: -6px;
+    top: var(--arrow-top, 50%);
+    transform: translateY(-50%) rotate(45deg);
+    border-radius: 0 0 0 3px;
+    border-top-color: transparent;
+    border-right-color: transparent;
+}
+
