@@ -22,4 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onRequestEditorContentForSave: (callback) => ipcRenderer.on('request-editor-content-for-save', callback),
   onCheckUnsavedChanges: (callback) => ipcRenderer.on('check-unsaved-changes', callback),
   onWindowStateChange: (callback) => ipcRenderer.on('window-state-changed', (_event, state) => callback(state)),
+
+  startFileOpen: () => ipcRenderer.send('start-file-open'),
+  fileDropped: (filePath) => ipcRenderer.send('file-dropped', filePath),
 });

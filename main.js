@@ -124,3 +124,13 @@ ipcMain.on('unsaved-changes-response', async (event, hasUnsavedChanges) => {
     mainWindow.close();
   }
 });
+
+ipcMain.on('file-dropped', (event, filePath) => {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    mainWindow.webContents.send('file-opened', content, filePath);
+  } catch (error) {
+    console.error("Fehler beim Lesen der gedroppten Datei:", error);
+    // Optional: Eine Fehlermeldung an den Renderer senden
+  }
+});
