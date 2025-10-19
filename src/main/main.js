@@ -102,28 +102,16 @@ ipcMain.on('window-minimize', () => mainWindow?.minimize());
 ipcMain.on('window-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
 ipcMain.on('window-close', () => mainWindow?.close());
 
-ipcMain.handle('show-confirm-dialog', async (event, options) => {
-  const window = BrowserWindow.fromWebContents(event.sender);
-  return await dialog.showMessageBox(window, options);
-});
-
-ipcMain.on('unsaved-changes-response', async (event, hasUnsavedChanges) => {
-  if (hasUnsavedChanges) {
-    const choice = await dialog.showMessageBox(mainWindow, {
-      type: 'question',
-      buttons: ['Änderungen verwerfen', 'Abbrechen'],
-      defaultId: 1,
-      title: 'Ungespeicherte Änderungen',
-      message: 'Sie haben ungespeicherte Änderungen. Möchten Sie wirklich beenden?'
-    });
-    if (choice.response === 0) { // "Verwerfen" geklickt
-      forceClose = true;
-      mainWindow.close();
-    }
-  } else {
+ipcMain.on('unsaved-changes-response', (event, hasUnsavedChanges) => {
+  if (!hasUnsavedChanges) {
     forceClose = true;
     mainWindow.close();
   }
+});
+
+ipcMain.on('force-close-app', () => {
+    forceClose = true;
+    mainWindow.close();
 });
 
 ipcMain.on('file-dropped', (event, filePath) => {

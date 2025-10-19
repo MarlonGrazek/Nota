@@ -2,11 +2,13 @@
 
 import TabManager from './tab-manager.js';
 import TooltipManager from './tooltip-manager.js';
+import ModalManager from './modal-manager.js';
 
 // --- INIT ---
 
-// 1. Initialize Tooltips
+// 1. Initialize
 TooltipManager.init();
+ModalManager.init();
 
 // 2. Create Editor
 const editorContainer = document.getElementById('editor-container');

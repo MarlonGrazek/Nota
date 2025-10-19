@@ -107,6 +107,15 @@
     background-color: #6b9312; /* Dunklere Akzentfarbe im Hover */
 }
 
+.modal-button.danger {
+    background-color: #c0392b; /* Ein passendes Rot für dunkle Themes */
+    color: #ffffff;
+}
+
+.modal-button.danger:hover {
+    background-color: #a93226; /* Dunkleres Rot im Hover */
+}
+
 .modal-button:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(92, 126, 16, 0.5); /* Fokus-Indikator (Farbe anpassen) */

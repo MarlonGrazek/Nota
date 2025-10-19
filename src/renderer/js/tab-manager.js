@@ -1,5 +1,7 @@
 // src/renderer/js/tab-manager.js
 
+import ModalManager from './modal-manager.js';
+
 export default class TabManager {
     constructor(editorView) {
         this.editorView = editorView;
@@ -110,7 +112,28 @@ export default class TabManager {
 
         window.electronAPI.onCheckUnsavedChanges(() => {
             const hasUnsavedChanges = this.openFiles.some(file => file.currentContent !== file.originalContent);
-            window.electronAPI.sendUnsavedChangesResponse(hasUnsavedChanges);
+            
+            if (hasUnsavedChanges) {
+                // NEU: Zeige das Modal, anstatt eine Antwort an main.js zu senden
+                ModalManager.show({
+                    title: 'Ungespeicherte Änderungen',
+                    message: 'Sie haben ungespeicherte Änderungen. Möchten Sie wirklich beenden und alle Änderungen verwerfen?',
+                    buttons: [
+                        { label: 'Abbrechen', action: () => {} }, // Tut nichts
+                        { 
+                            label: 'Beenden & Verwerfen', 
+                            type: 'danger', 
+                            action: () => {
+                                // Sende den neuen Befehl zum Schließen an main.js
+                                window.electronAPI.forceCloseApp();
+                            }
+                        }
+                    ]
+                });
+            } else {
+                // ALT: Keine Änderungen, sage main.js, dass das Schließen sicher ist
+                window.electronAPI.sendUnsavedChangesResponse(false);
+            }
         });
     }
 
@@ -174,27 +197,43 @@ export default class TabManager {
         return newFile;
     }
 
-    async closeFile(fileIdToClose) {
+    closeFile(fileIdToClose) {
         const fileToClose = this.openFiles.find(f => f.id === fileIdToClose);
         if (!fileToClose) return;
+        
         const isDirty = fileToClose.currentContent !== fileToClose.originalContent;
+
+        // Interne Funktion, um das Schließen tatsächlich durchzuführen
+        const _doClose = () => {
+            const fileIndex = this.openFiles.findIndex(f => f.id === fileIdToClose);
+            this.openFiles.splice(fileIndex, 1);
+            if (this.openFiles.length === 0) {
+                this.activeFileId = null;
+                this.displayActiveFileContent();
+                this.renderTabs();
+                return;
+            }
+            if (this.activeFileId === fileIdToClose) {
+                const newActiveIndex = Math.max(0, fileIndex - 1);
+                this.setActiveFile(this.openFiles[newActiveIndex].id);
+            } else {
+                this.renderTabs();
+            }
+        };
+
         if (isDirty) {
-            const result = await window.electronAPI.showConfirmDialog({ type: 'question', buttons: ['Schließen', 'Abbrechen'], defaultId: 1, title: 'Ungespeicherte Änderungen', message: `Möchten Sie die Änderungen an "${fileToClose.filePath?.split(/[\\/]/).pop() || 'Neue Datei'}" wirklich verwerfen?` });
-            if (result.response === 1) return;
-        }
-        const fileIndex = this.openFiles.findIndex(f => f.id === fileIdToClose);
-        this.openFiles.splice(fileIndex, 1);
-        if (this.openFiles.length === 0) {
-            this.activeFileId = null;
-            this.displayActiveFileContent();
-            this.renderTabs();
-            return;
-        }
-        if (this.activeFileId === fileIdToClose) {
-            const newActiveIndex = Math.max(0, fileIndex - 1);
-            this.setActiveFile(this.openFiles[newActiveIndex].id);
+            // NEU: Zeige das Modal statt des nativen Dialogs
+            ModalManager.show({
+                title: 'Ungespeicherte Änderungen',
+                message: `Möchten Sie die Änderungen an "${fileToClose.filePath?.split(/[\\/]/).pop() || 'Neue Datei'}" wirklich verwerfen?`,
+                buttons: [
+                    { label: 'Abbrechen', action: () => {} }, // Tut nichts
+                    { label: 'Änderungen verwerfen', type: 'danger', action: _doClose } // Führt das Schließen aus
+                ]
+            });
         } else {
-            this.renderTabs();
+            // ALT: Keine Änderungen, sofort schließen
+            _doClose();
         }
     }
 

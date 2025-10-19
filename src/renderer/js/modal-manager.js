@@ -62,17 +62,18 @@ const ModalManager = {
             options.buttons.forEach(btnConfig => {
                 const button = document.createElement('button');
                 button.textContent = btnConfig.label || 'OK';
-                // Füge Klassen hinzu, z.B. für primäre/sekundäre Buttons (CSS muss dies unterstützen)
                 button.className = 'modal-button';
-                if (btnConfig.primary) {
+                
+                if (btnConfig.type === 'primary') {
                     button.classList.add('primary');
+                } else if (btnConfig.type === 'danger') {
+                    button.classList.add('danger');
                 }
+
                 button.addEventListener('click', () => {
                     if (typeof btnConfig.action === 'function') {
-                        btnConfig.action(); // Führe die definierte Aktion aus
+                        btnConfig.action();
                     }
-                    // Standardmäßig schließt jeder Button das Modal, es sei denn, die Action gibt `false` zurück.
-                    // (Kannst du anpassen, falls du Modals offen lassen willst nach Klick)
                     this.close();
                 });
                 this.modalActions.appendChild(button);

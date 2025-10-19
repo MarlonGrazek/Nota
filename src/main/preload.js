@@ -12,9 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.send('window-minimize'),
   maximizeWindow: () => ipcRenderer.send('window-maximize'),
   closeWindow: () => ipcRenderer.send('window-close'),
-  
-  // === Request/Response (Renderer fragt, Main antwortet) ===
-  showConfirmDialog: (options) => ipcRenderer.invoke('show-confirm-dialog', options),
+  forceCloseApp: () => ipcRenderer.send('force-close-app'),
 
   // === Events von Main an Renderer ===
   onFileOpened: (callback) => ipcRenderer.on('file-opened', (_event, content, filePath) => callback(content, filePath)),
@@ -22,7 +20,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onRequestEditorContentForSave: (callback) => ipcRenderer.on('request-editor-content-for-save', callback),
   onCheckUnsavedChanges: (callback) => ipcRenderer.on('check-unsaved-changes', callback),
   onWindowStateChange: (callback) => ipcRenderer.on('window-state-changed', (_event, state) => callback(state)),
-
-  startFileOpen: () => ipcRenderer.send('start-file-open'),
   fileDropped: (filePath) => ipcRenderer.send('file-dropped', filePath),
 });
