@@ -1,0 +1,169 @@
+/* src/renderer/css/tab.css */
+
+/* --- TAB LAYOUT --- */
+.tab-area-wrapper {
+    flex-grow: 1; /* Nimmt allen verfügbaren Platz ein */
+    min-width: 0; /* Erlaubt dem Element zu schrumpfen */
+    overflow: hidden; /* Versteckt überstehende Inhalte */
+    display: flex; /* Richtet Tab-Leiste und Button nebeneinander aus */
+    align-items: center;
+}
+
+.tab-bar {
+    display: inline-flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 8px 0 0; /* Behält den perfekten linken Abstand bei */
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Dynamische Fade-Effekte */
+.tab-bar.is-scrolled-start.is-scrolled-end {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+    mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+}
+.tab-bar.is-scrolled-start:not(.is-scrolled-end) {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 20px);
+    mask-image: linear-gradient(to right, transparent, black 20px);
+}
+.tab-bar.is-scrolled-end:not(.is-scrolled-start) {
+    -webkit-mask-image: linear-gradient(to left, transparent, black 20px);
+    mask-image: linear-gradient(to left, transparent, black 20px);
+}
+
+.new-tab-button {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    -webkit-app-region: no-drag;
+    transition: all 0.15s ease-out;
+    margin-left: 6px; 
+    margin-right: 8px;
+}
+
+.new-tab-button:hover {
+  background-color: var(--background-hover-subtle);
+  color: var(--text-primary);
+}
+
+.new-tab-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  height: 30px;
+  background-color: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background-color 0.15s ease-out;
+  transition: transform 0.2s ease-out;
+  flex-shrink: 0;
+}
+
+.tab-item.active {
+  background-color: var(--tab-active-background);
+}
+
+.tab-item:not(.active):hover {
+  background-color: var(--background-hover-subtle);
+}
+
+.tab-filename {
+  font-size: 13px;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.tab-item.active .tab-filename {
+  color: var(--text-primary);
+}
+
+.tab-item:not(.active) .tab-filename {
+  color: var(--text-secondary);
+}
+
+.tab-dirty-marker {
+  font-weight: bold;
+  padding-right: 2px;
+  color: var(--text-primary);
+}
+
+.tab-close-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-secondary);
+  transition: background-color 0.2s;
+}
+
+.tab-close-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tab-item:hover .tab-close-button {
+  color: var(--text-primary);
+}
+
+.tab-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+
+/* --- STYLES FÜR MANUELLES DRAG & DROP --- */
+
+/* Verhindert Textauswahl und setzt den Cursor, wenn gezogen wird */
+body.is-dragging {
+    user-select: none;
+    cursor: grabbing !important;
+}
+
+/* Stil für den gezogenen Tab: Er schwebt über allem */
+.tab-item.dragging {
+    opacity: 0.9;
+    z-index: 999;
+    pointer-events: none; /* Wichtig, damit die Maus-Events den Container erreichen */
+    background-color: var(--tab-active-background);
+    transition: none;
+}
+
+/* Der Platzhalter für den gezogenen Tab */
+.tab-placeholder {
+    background-color: transparent;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: width 0.2s ease-out;
+}
+
+/* Visuelles Feedback, wenn eine Datei vom OS über die Leiste gezogen wird */
+.tab-area-wrapper.drag-over {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* (BUGFIX) Verhindert, dass andere UI-Elemente auf Maus-Events reagieren,
+   während ein Tab gezogen wird. Löst das Tooltip- UND Cursor-Problem. */
+body.is-dragging .tab-item:not(.dragging),
+body.is-dragging .new-tab-button {
+    pointer-events: none;
+}

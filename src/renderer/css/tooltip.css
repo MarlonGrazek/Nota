@@ -1,3 +1,5 @@
+/* src/renderer/css/tooltip.css */
+
 /* The tooltip container */
 .custom-tooltip {
     /* Basic Styles */
@@ -85,4 +87,3 @@
     border-top-color: transparent;
     border-right-color: transparent;
 }
-

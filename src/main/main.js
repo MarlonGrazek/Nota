@@ -1,4 +1,4 @@
-// main.js
+// src/main/main.js
 
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('node:path');
@@ -17,11 +17,12 @@ function createWindow() {
     frame: false,
     titleBarStyle: 'hidden',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.js'), // Pfad ist jetzt korrekt
     },
   });
 
-  mainWindow.loadFile('index.html');
+  // Pfad zur index.html angepasst
+  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   mainWindow.maximize();
 
   // Sendet den initialen Fensterzustand, nachdem das Fenster geladen ist.
