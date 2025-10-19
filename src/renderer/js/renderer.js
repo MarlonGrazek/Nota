@@ -3,12 +3,14 @@
 import TabManager from './tab-manager.js';
 import TooltipManager from './tooltip-manager.js';
 import ModalManager from './modal-manager.js';
+import UpdateManager from './update-manager.js';
 
 // --- INIT ---
 
 // 1. Initialize
 TooltipManager.init();
 ModalManager.init();
+UpdateManager.init();
 
 // 2. Create Editor
 const editorContainer = document.getElementById('editor-container');
@@ -90,6 +92,9 @@ window.electronAPI.onWindowStateChange(state => {
     document.getElementById('maximize-button').classList.toggle('is-maximized', state.maximized);
 });
 
+window.addEventListener('beforeunload', () => {
+  UpdateManager.cleanup();
+});
 
 // 8. Initial setup calls
 applyZoom();

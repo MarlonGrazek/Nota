@@ -21,4 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onCheckUnsavedChanges: (callback) => ipcRenderer.on('check-unsaved-changes', callback),
   onWindowStateChange: (callback) => ipcRenderer.on('window-state-changed', (_event, state) => callback(state)),
   fileDropped: (filePath) => ipcRenderer.send('file-dropped', filePath),
+
+  restartAndInstall: () => ipcRenderer.send('restart-and-install'),
+  onUpdateStatus: (callback) => ipcRenderer.on('update-status', (_event, payload) => callback(payload)),
+  removeListener: (channel) => ipcRenderer.removeAllListeners(channel),
 });
