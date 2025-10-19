@@ -1,0 +1,113 @@
+/* src/renderer/css/modal.css */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0; /* top, right, bottom, left = 0 */
+    background-color: rgba(0, 0, 0, 0.6); /* Dunklerer Hintergrund */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1000; /* Stellt sicher, dass es über allem liegt */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-out, visibility 0s linear 0.2s;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+}
+
+.modal-container {
+    background-color: var(--background-titlebar); /* Passt zum Nota-Design */
+    border-radius: 8px; /* Etwas weniger rund */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    width: 100%;
+    max-width: 500px; /* Standardbreite, kann angepasst werden */
+    overflow: hidden; /* Verhindert Überlaufen des Inhalts */
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.modal-overlay.visible .modal-container.visible {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.modal-header {
+    padding: 1rem 1.5rem; /* Mehr Padding */
+    border-bottom: 1px solid var(--background-sidebar); /* Trennlinie */
+    flex-shrink: 0;
+}
+
+.modal-title {
+    font-size: 1.15rem; /* Etwas größerer Titel */
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.modal-content {
+    padding: 1.5rem;
+    overflow-y: auto; /* Scrollbar, wenn Inhalt zu lang */
+    color: var(--text-secondary); /* Textfarbe für den Inhalt */
+    line-height: 1.6;
+    flex-grow: 1; /* Nimmt verfügbaren Platz ein */
+}
+
+#modal-message {
+    margin: 0;
+    white-space: pre-wrap; /* Umbrüche und Leerzeichen im Text respektieren */
+}
+
+.modal-actions {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--background-sidebar); /* Trennlinie */
+    background-color: var(--background-titlebar); /* Gleicher Hintergrund wie Header */
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end; /* Buttons nach rechts */
+    gap: 0.75rem; /* Abstand zwischen Buttons */
+}
+
+.modal-button {
+    padding: 0.5rem 1rem; /* Button-Größe */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    background-color: var(--background-sidebar); /* Standard-Button-Farbe */
+    color: var(--text-secondary);
+}
+
+.modal-button:hover {
+    background-color: var(--tab-active-background); /* Hover-Farbe */
+    color: var(--text-primary);
+}
+
+.modal-button.primary {
+    background-color: #5c7e10; /* Akzentfarbe für primäre Buttons (Anpassen!) */
+    color: #ffffff;
+}
+
+.modal-button.primary:hover {
+    background-color: #6b9312; /* Dunklere Akzentfarbe im Hover */
+}
+
+.modal-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(92, 126, 16, 0.5); /* Fokus-Indikator (Farbe anpassen) */
+}
