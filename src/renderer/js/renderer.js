@@ -4,6 +4,7 @@ import TabManager from './tab-manager.js';
 import TooltipManager from './tooltip-manager.js';
 import ModalManager from './modal-manager.js';
 import UpdateManager from './update-manager.js';
+import NotificationManager from './notification-manager.js';
 
 // --- INIT ---
 
@@ -11,6 +12,7 @@ import UpdateManager from './update-manager.js';
 TooltipManager.init();
 ModalManager.init();
 UpdateManager.init();
+NotificationManager.init();
 
 // 2. Create Editor
 const editorContainer = document.getElementById('editor-container');

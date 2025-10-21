@@ -1,13 +1,12 @@
 // src/renderer/js/update-manager.js
 
-// Importiere den ModalManager, den du bereits hast
-import ModalManager from './modal-manager.js';
+// Importiere den NotificationManager statt dem ModalManager
+import NotificationManager from './notification-manager.js';
 
 const UpdateManager = {
   init() {
-    // Lausche auf alle 'update-status'-Events vom Main-Prozess
     window.electronAPI.onUpdateStatus((payload) => {
-      console.log('UpdateManager received:', payload); // Für Debugging
+      console.log('UpdateManager received:', payload);
       this.handleUpdateStatus(payload);
     });
     console.log("Renderer UpdateManager initialized.");
@@ -18,25 +17,21 @@ const UpdateManager = {
 
     switch (status) {
       case 'downloaded-pending-restart':
-        // Das ist der wichtigste Teil: Update ist geladen
-        this.showRestartModal(version);
+        // Rufe die neue Notification-Funktion auf
+        this.showRestartNotification(version);
         break;
       
       case 'error':
-        // Zeige einen Fehler an, falls etwas schiefgeht
-        this.showErrorModal(message);
-        break;
-        
-      case 'checking':
-        console.log('Update-Status: Suche nach Update...');
-        // Hier könntest du später einen Ladeindikator in der UI zeigen
+        // Wandel auch die Fehlermeldung in eine Notification um
+        this.showErrorNotification(message);
         break;
         
       case 'downloading':
         console.log(`Update-Status: Lade herunter... ${payload.percent}%`);
-        // Hier könntest du eine Fortschrittsanzeige (dein Kreis) implementieren
         break;
-
+      case 'checking':
+        console.log('Update-Status: Suche nach Update...');
+        break;
       case 'not-available':
         console.log('Update-Status: Keine Updates verfügbar.');
         break;
@@ -44,22 +39,20 @@ const UpdateManager = {
   },
 
   /**
-   * Zeigt das Modal an, das den Neustart anbietet.
+   * NEU: Zeigt die Update-Benachrichtigung an (statt Modal).
    */
-  showRestartModal(version) {
-    ModalManager.show({
-      title: 'Update heruntergeladen ✅',
-      message: `Version ${version} wurde heruntergeladen.\nDas Update wird beim nächsten Start installiert.`,
+  showRestartNotification(version) {
+    NotificationManager.show({
+      title: 'Update bereit ✅',
+      message: `Version ${version} wurde installiert.\nStarte die App neu, um das Update anzuwenden.`,
+      // duration: undefined (oder weglassen) -> kein Timer
       buttons: [
-        { 
-          label: 'OK', 
-          action: () => {} // Schließt einfach das Modal
-        },
+        // Der "x"-Button wird automatisch erstellt.
+        // Wir brauchen nur den "Neu starten"-Button.
         {
           label: 'Jetzt neu starten',
-          type: 'primary', // Nutzt dein 'primary' Button Styling
+          type: 'primary', // Nutzt dein .notification-button.primary Styling
           action: () => {
-            // Sendet das Signal zum Neustart an den Main-Prozess
             window.electronAPI.restartAndInstall();
           }
         }
@@ -68,23 +61,19 @@ const UpdateManager = {
   },
 
   /**
-   * Zeigt ein Fehler-Modal an.
+   * NEU: Zeigt eine Fehler-Benachrichtigung an (statt Modal).
    */
-  showErrorModal(message) {
-     ModalManager.show({
+  showErrorNotification(message) {
+     NotificationManager.show({
         title: 'Update Fehler ❌',
         message: `Es gab ein Problem beim Update:\n${message || 'Unbekannter Fehler'}`,
-        buttons: [{ label: 'OK' }]
+        // Kein Timer, kein Button (nur 'x' zum Schließen)
      });
   },
 
-  /**
-   * (Optional) Eine Cleanup-Funktion, um Listener zu entfernen.
-   */
   cleanup() {
     window.electronAPI.removeListener('update-status');
   }
 };
 
-// Exportiere das Objekt, damit es in renderer.js importiert werden kann
 export default UpdateManager;
