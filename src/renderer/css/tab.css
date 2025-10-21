@@ -261,33 +261,30 @@ body.is-dragging .new-tab-button {
 }
 
 /* ==========================================================================
-   6. ANIMATIONEN FÜR ÖFFNEN & SCHLIESSEN (KOMPLETT NEU)
-   ========================================================================== */
+   6. ANIMATIONEN FÜR ÖFFNEN & SCHLIESSEN
+   ========================================================================== */
 
-/* "Geist"-Tab für die Schließanimation (Anforderung 2) */
+/* "Geist"-Tab für die Schließanimation (bereinigt) */
 .tab-ghost-exiting {
   display: flex;
   align-items: center;
-  padding: 0 10px;
-  height: 30px;
   border-radius: 6px;
   z-index: 998;
   pointer-events: none;
   overflow: hidden;
   box-sizing: border-box;
-  opacity: 1;
-  /* WICHTIG: Muss wie ein normaler Tab aussehen (transparent + ::before) */
   background-color: transparent !important;
-  position: relative;
+  position: absolute;
+  /* KEINE transition, opacity, transform, clip-path hier! */
 }
 
 .tab-ghost-exiting::before {
+  /* Bleibt wichtig */
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 6px;
   z-index: 0;
-  /* Inaktiver Hintergrund (oder 'transparent') */
   background-color: var(--background-hover-subtle);
 }
 
@@ -299,6 +296,7 @@ body.is-dragging .new-tab-button {
 .tab-ghost-exiting .tab-filename,
 .tab-ghost-exiting .tab-close-button {
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .tab-ghost-exiting .tab-dirty-marker {
@@ -306,22 +304,39 @@ body.is-dragging .new-tab-button {
 }
 
 
-/* KORRIGIERTE Wisch-Animation (Anforderung 4) */
-
-/* 1. Setup-Klasse (wird von JS gesetzt) */
-/* Setzt den Startpunkt (eingerollt) OHNE Animation */
+/* Wisch-Animation für AKTIVIERUNG (rechts nach links) */
 .tab-item.tab-wipe-init::before {
   background-color: var(--tab-active-background);
+  /* Ziel-Hintergrund */
   clip-path: inset(0 0 0 100%);
+  /* Start: Rechts eingeklappt */
   transition: none !important;
-  /* Wichtig: Keine Transition hier */
 }
 
-/* 2. Play-Klasse (wird von JS gesetzt) */
-/* Löst die Animation zum "ausrollen" aus */
 .tab-item.tab-wipe-play::before {
-  transition: clip-path 250ms cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  /* Hinzufügen der temporären Variable für den Workaround */
+  transition: var(--temp-transition-override, clip-path 250ms cubic-bezier(0.25, 0.8, 0.25, 1)) !important;
+  /* Wichtig: background-color muss NICHT animiert werden, da sie im init schon gesetzt wird */
   clip-path: inset(0 0 0 0);
+  /* Ziel: Voll sichtbar */
 }
 
-/* Alte Keyframes werden nicht mehr benötigt */
+
+/* Wisch-Animation für DEAKTIVIERUNG (links nach rechts) */
+.tab-item.tab-wipe-out-init::before {
+  background-color: var(--tab-active-background);
+  /* Start: Aktiver Hintergrund */
+  clip-path: inset(0 0 0 0);
+  /* Start: Voll sichtbar */
+  transition: none !important;
+}
+
+.tab-item.tab-wipe-out-play::before {
+  /* Hinzufügen der temporären Variable für den Workaround */
+  transition: var(--temp-transition-override, clip-path 250ms cubic-bezier(0.25, 0.8, 0.25, 1), background-color 250ms ease-out) !important;
+  /* Animiert beides: */
+  clip-path: inset(0 0 0 100%);
+  /* Ziel: Nach rechts eingerollt (links unsichtbar) */
+  background-color: transparent;
+  /* Ziel: Hintergrund wird transparent (inaktiv) */
+}

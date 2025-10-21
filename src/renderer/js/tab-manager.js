@@ -40,13 +40,16 @@ export default class TabManager {
         // NEU: Animations-Konstanten
         this.ANIM_DURATION_MS = 250;
         this.ANIM_EASING = 'cubic-bezier(0.25, 0.8, 0.25, 1)';
-        this.ANIM_TRANSITION_PROPS = `transform ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING}`;
-        this.ANIM_SIZE_PROPS = `
+        this.ANIM_TRANSITION_PROPS_FLIP = `transform ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING}`;
+
+        // Für das Öffnen UND Schließen (Ein-/Ausrollen, Größe, Opacity)
+        this.ANIM_TRANSITION_PROPS_SIZE_OPACITY = `
             clip-path ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING},
             max-width ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING},
-            padding ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING},
+            padding-left ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING},
+            padding-right ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING},
             margin-right ${this.ANIM_DURATION_MS}ms ${this.ANIM_EASING},
-            opacity ${this.ANIM_DURATION_MS * 0.7}ms ${this.ANIM_EASING}
+            opacity ${this.ANIM_DURATION_MS * 0.8}ms ease-out 
         `;
     }
 
@@ -239,19 +242,33 @@ export default class TabManager {
     }
 
     addNewFile(filePath = null, content = '') {
-        const newFile = { id: this._createId(), filePath, originalContent: content, currentContent: content };
+        const newFile = {
+            id: this._createId(), // Eindeutige ID generieren
+            filePath,
+            originalContent: content,
+            currentContent: content
+        };
+        // *** WICHTIG: Merke dir die ID des Tabs, der VORHER aktiv war ***
+        const previouslyActiveId = this.activeFileId;
 
+        // Funktion, die den DOM tatsächlich aktualisiert (wird an _animateTabTransition übergeben)
         const updateDom = () => {
-            this.openFiles.push(newFile);
-            this.activeFileId = newFile.id;
-            this._displayActiveFileContent();
-            this.renderTabs();
+            this.openFiles.push(newFile); // Füge die neue Datei zur Liste hinzu
+            this.activeFileId = newFile.id; // Setze den neuen Tab als aktiv
+            this._displayActiveFileContent(); // Zeige den Inhalt im Editor an
+            this.renderTabs(); // Rendere die Tab-Leiste neu
         };
 
-        this._animateTabTransition(updateDom, { openingTabId: newFile.id });
+        // Rufe die Animationsfunktion auf und übergebe die IDs der beteiligten Tabs
+        this._animateTabTransition(updateDom, {
+            openingTabId: newFile.id,          // Der Tab, der gerade geöffnet wird
+            deactivatingTabId: previouslyActiveId // Der Tab, der gerade deaktiviert wird
+        });
 
+        // Scrolle leicht verzögert ans Ende, damit der neue Tab sichtbar wird
         setTimeout(() => this._scrollToEnd(), 50);
-        return newFile;
+
+        return newFile; // Gib das neue Datei-Objekt zurück
     }
 
     closeFile(fileIdToClose) {
@@ -305,65 +322,83 @@ export default class TabManager {
     // KORRIGIERTE Open/Close Animation (FLIP)
     // =========================================================================
 
-    _animateTabTransition(domUpdateCallback, { openingTabId = null, closingTabId = null, activatingTabId = null } = {}) {
+    /**
+     * Führt eine DOM-Aktualisierung durch und animiert die Übergänge der Tabs (Öffnen, Schließen, Aktivieren, Deaktivieren).
+     * Verwendet die FLIP-Technik für Positionsänderungen und CSS-Klassen für Ein-/Ausblend- und Wisch-Effekte.
+     * @param {function} domUpdateCallback - Die Funktion, die den State (this.openFiles, this.activeFileId) ändert und this.renderTabs() aufruft.
+     * @param {object} [options={}] - Optionen zur Steuerung der Animationen.
+     * @param {string|null} [options.openingTabId=null] - Die ID des Tabs, der gerade hinzugefügt wird.
+     * @param {string|null} [options.closingTabId=null] - Die ID des Tabs, der gerade entfernt wird.
+     * @param {string|null} [options.activatingTabId=null] - Die ID des Tabs, der durch das Schließen eines anderen aktiviert wird (bekommt Wisch-Rein-Animation).
+     * @param {string|null} [options.deactivatingTabId=null] - Die ID des Tabs, der durch das Öffnen eines neuen deaktiviert wird (bekommt Wisch-Raus-Animation).
+     */
+    _animateTabTransition(domUpdateCallback, { openingTabId = null, closingTabId = null, activatingTabId = null, deactivatingTabId = null } = {}) {
 
-        // 1. (F)IRST: Positionen *vor* der DOM-Änderung messen
-        // Wir verwenden eine Map mit stabilen IDs (fileId oder 'new-tab-button')
+        // 1. (F)IRST: Positionen aller relevanten Elemente *vor* der DOM-Änderung messen.
         const oldPositions = new Map();
+        // Schließt den "+"-Button mit ein, da er sich auch verschieben kann.
         const elementsToTrack = [...this.tabBar.children, document.getElementById('new-tab-button')];
-        let closingTabClone = null;
-        let closingTabRect = null;
+        let closingTabClone = null; // Klon des zu schließenden Tabs für die Geist-Animation.
+        let closingTabRect = null;  // Position und Größe des zu schließenden Tabs.
 
         elementsToTrack.forEach(el => {
-            if (!el) return;
-            const id = el.dataset.fileId || el.id;
-            const rect = el.getBoundingClientRect();
-            oldPositions.set(id, rect);
+            if (!el) return; // Überspringe, falls ein Element nicht gefunden wird.
+            const id = el.dataset.fileId || el.id; // Nutze data-file-id oder die Element-ID.
+            const rect = el.getBoundingClientRect(); // Messe Position und Größe.
+            oldPositions.set(id, rect); // Speichere in der Map.
 
+            // Wenn dieser Tab geschlossen wird, erstelle einen Klon für die Animation.
             if (id === closingTabId) {
-                closingTabClone = el.cloneNode(true); // Klon für Geist-Animation
-                closingTabRect = rect;
+                closingTabClone = el.cloneNode(true); // Tiefe Kopie des Elements.
+                closingTabRect = rect; // Speichere seine letzte Position.
             }
         });
 
-        // 2. (L)AST: DOM-Änderung durchführen (State ändern & neu rendern via callback)
+        // 2. (L)AST: Führe die DOM-Änderung durch (State ändern & neu rendern via Callback).
         domUpdateCallback();
 
-        // 3. (I)NVERT: Neue Positionen messen und Invertierung vorbereiten
-        let openingTabEl = null;
-        let activatingTabEl = null;
-        const elementsToAnimate = []; // Tabs, die sich verschieben (FLIP)
+        // 3. (I)NVERT: Messe die *neuen* Positionen und bereite die Invertierungs-Transformationen vor.
+        let openingTabEl = null;    // Referenz auf das DOM-Element des neuen Tabs.
+        let activatingTabEl = null; // Referenz auf das Element, das die Wisch-Rein-Animation bekommt.
+        let deactivatingTabEl = null; // Referenz auf das Element, das die Wisch-Raus-Animation bekommt.
+        const elementsToAnimate = []; // Array für Elemente, die nur verschoben werden (FLIP).
+        // Schließt wieder den "+"-Button mit ein.
         const newElements = [...this.tabBar.children, document.getElementById('new-tab-button')];
 
         newElements.forEach(el => {
             if (!el) return;
             const id = el.dataset.fileId || el.id;
-            const oldRect = oldPositions.get(id);
+            const oldRect = oldPositions.get(id); // Hole die alte Position aus der Map.
 
+            // Identifiziere die speziell zu animierenden Tabs.
             if (id === openingTabId) {
-                openingTabEl = el; // Referenz auf den neuen Tab
-                return;
+                openingTabEl = el; return; // Neuer Tab wird nicht verschoben, nur eingeblendet.
             }
             if (id === activatingTabId) {
-                activatingTabEl = el; // Referenz auf den Wisch-Tab
+                activatingTabEl = el;
+            }
+            if (id === deactivatingTabId) {
+                deactivatingTabEl = el;
             }
 
+            // Wenn das Element schon vorher da war, berechne die Positionsänderung.
             if (oldRect) {
-                // Dieses Element existierte schon vorher
                 const newRect = el.getBoundingClientRect();
-                const deltaX = oldRect.left - newRect.left;
+                const deltaX = oldRect.left - newRect.left; // Differenz in der X-Position.
 
+                // Wenn sich die Position signifikant geändert hat, bereite FLIP vor.
                 if (Math.abs(deltaX) > 0.5) {
+                    // Setze die Invertierungs-Transformation (bewege Element zur alten Position).
                     el.style.transform = `translateX(${deltaX}px)`;
-                    el.style.transition = 'none';
-                    elementsToAnimate.push(el);
+                    el.style.transition = 'none'; // Wichtig: Keine Transition während des Setups!
+                    elementsToAnimate.push(el); // Füge zum Array der zu animierenden Elemente hinzu.
                 }
             }
         });
 
-        // Animations-Setup (vor dem nächsten Frame)
+        // --- Animations-Setup (vor dem nächsten Frame) ---
 
-        // Setup 1: Öffnenden Tab vorbereiten (Anforderung 1)
+        // Setup 1: Öffnenden Tab vorbereiten (Start: rechts eingeklappt, unsichtbar).
         if (openingTabEl) {
             openingTabEl.style.transition = 'none';
             openingTabEl.style.clipPath = 'inset(0 100% 0 0)';
@@ -374,104 +409,163 @@ export default class TabManager {
             openingTabEl.style.opacity = '0';
         }
 
-        // Setup 2: Schließenden "Geist"-Tab vorbereiten (Anforderung 2)
+        // Setup 2: Schließenden "Geist"-Tab vorbereiten (Start: voll sichtbar an alter Position).
         if (closingTabClone && closingTabRect) {
-            closingTabClone.classList.remove('active');
-            closingTabClone.classList.add('tab-ghost-exiting');
-            closingTabClone.style.position = 'absolute';
+            closingTabClone.classList.remove('active'); // Style anpassen (nicht mehr aktiv).
+            closingTabClone.classList.add('tab-ghost-exiting'); // Basis-Styling für den Geist.
+            closingTabClone.style.position = 'absolute'; // Für Positionierung außerhalb des Flows.
             closingTabClone.style.left = `${closingTabRect.left}px`;
             closingTabClone.style.top = `${closingTabRect.top}px`;
             closingTabClone.style.width = `${closingTabRect.width}px`;
             closingTabClone.style.height = `${closingTabRect.height}px`;
-            closingTabClone.style.margin = '0';
-            closingTabClone.style.pointerEvents = 'none';
-            closingTabClone.style.transition = 'none';
-            document.body.appendChild(closingTabClone);
+            closingTabClone.style.margin = '0'; // Keine Margins bei absoluter Positionierung.
+            closingTabClone.style.pointerEvents = 'none'; // Keine Mausinteraktion.
+            // Explizite Startwerte für die Transition:
+            closingTabClone.style.clipPath = 'inset(0 0 0 0)'; // Vollständig sichtbar.
+            closingTabClone.style.maxWidth = `${closingTabRect.width}px`; // Originalbreite.
+            closingTabClone.style.opacity = '1'; // Vollständig sichtbar.
+            closingTabClone.style.transition = 'none'; // Keine Transition im Setup!
+            document.body.appendChild(closingTabClone); // Füge Klon zum Body hinzu.
         }
 
-        // Setup 3: Aktivierenden Tab für Wisch-Effekt vorbereiten (Anforderung 4)
+        // Setup 3: Wisch-Rein-Animation für aktivierten Tab vorbereiten.
         if (activatingTabEl) {
-            // Setzt den Startzustand der Wisch-Animation (eingerollt)
-            activatingTabEl.classList.add('tab-wipe-init');
-            // Nötig, um den "transition: none" Zustand zu erzwingen
-            getComputedStyle(activatingTabEl).clipPath;
+            activatingTabEl.classList.add('tab-wipe-init'); // Setzt Startzustand (rechts eingeklappt).
+            getComputedStyle(activatingTabEl).clipPath; // Erzwingt Reflow, damit Transition greift.
         }
 
-        // 4. (P)LAY: Animationen im nächsten Frame starten
-        requestAnimationFrame(() => {
-            const allTransitions = []; // Zum Aufräumen
+        // Setup 4: Wisch-Raus-Animation für deaktivierten Tab vorbereiten.
+        if (deactivatingTabEl) {
+            deactivatingTabEl.classList.add('tab-wipe-out-init'); // Setzt Startzustand (voll aktiv sichtbar).
+            getComputedStyle(deactivatingTabEl).clipPath; // Erzwingt Reflow.
+        }
 
-            // Play 1: Nachrutschende Tabs (Anforderung 3)
+        // 4. (P)LAY: Animationen im nächsten Frame starten.
+        requestAnimationFrame(() => {
+            const allTransitions = []; // Sammelt Promises für alle laufenden Animationen.
+
+            // Play 1: Nachrutschende Tabs zurück an ihre neue Position animieren (FLIP).
             elementsToAnimate.forEach(el => {
-                el.style.transition = this.ANIM_TRANSITION_PROPS;
-                el.style.transform = 'translateX(0)';
-                allTransitions.push(this._waitForTransition(el));
+                el.style.transition = this.ANIM_TRANSITION_PROPS_FLIP; // Nur Transform animieren.
+                el.style.transform = 'translateX(0)'; // Ziel: Keine Transformation.
+                allTransitions.push(this._waitForTransition(el, 'transform')); // Warten bis fertig.
             });
 
-            // Play 2: Öffnender Tab (Anforderung 1)
+            // Play 2: Öffnender Tab (Einrollen von rechts).
             if (openingTabEl) {
-                openingTabEl.style.transition = this.ANIM_SIZE_PROPS;
-                openingTabEl.style.clipPath = 'inset(0 0 0 0)';
-                openingTabEl.style.maxWidth = '250px';
-                openingTabEl.style.paddingLeft = '';
-                openingTabEl.style.paddingRight = '';
-                openingTabEl.style.marginRight = '';
-                openingTabEl.style.opacity = '1';
-                allTransitions.push(this._waitForTransition(openingTabEl));
+                openingTabEl.style.transition = this.ANIM_TRANSITION_PROPS_SIZE_OPACITY; // Clip, Größe, Opacity animieren.
+                openingTabEl.style.clipPath = 'inset(0 0 0 0)'; // Ziel: Voll sichtbar.
+                openingTabEl.style.maxWidth = ''; // Ziel: Standard-Breite.
+                openingTabEl.style.paddingLeft = ''; // Ziel: Standard-Padding.
+                openingTabEl.style.paddingRight = '';// Ziel: Standard-Padding.
+                openingTabEl.style.marginRight = ''; // Ziel: Standard-Margin.
+                openingTabEl.style.opacity = '1'; // Ziel: Voll sichtbar.
+                // Warte auf das Ende der clip-path Animation als Indikator.
+                allTransitions.push(this._waitForTransition(openingTabEl, 'clip-path'));
             }
 
-            // Play 3: Schließender Geist-Tab (Anforderung 2)
+            // Play 3: Schließender Geist-Tab (Einrollen nach rechts & Ausblenden).
             if (closingTabClone) {
-                closingTabClone.style.transition = this.ANIM_SIZE_PROPS;
-                closingTabClone.style.clipPath = 'inset(0 0 0 100%)'; // "Einrollen" nach links
-                closingTabClone.style.maxWidth = '0px';
-                closingTabClone.style.paddingLeft = '0';
-                closingTabClone.style.paddingRight = '0';
-                closingTabClone.style.marginRight = '0';
-                closingTabClone.style.opacity = '0';
-                allTransitions.push(this._waitForTransition(closingTabClone).then(() => {
-                    closingTabClone.remove();
+                // WICHTIG: Erst die Transition definieren.
+                closingTabClone.style.transition = this.ANIM_TRANSITION_PROPS_SIZE_OPACITY; // Clip, Größe, Opacity animieren.
+
+                // DANN die Zielwerte setzen.
+                closingTabClone.style.clipPath = 'inset(0 100% 0 0)'; // Ziel: Rechts eingeklappt.
+                closingTabClone.style.maxWidth = '0px';          // Ziel: Breite 0.
+                closingTabClone.style.paddingLeft = '0';        // Ziel: Padding 0.
+                closingTabClone.style.paddingRight = '0';       // Ziel: Padding 0.
+                closingTabClone.style.marginRight = '0';        // Ziel: Margin 0.
+                closingTabClone.style.opacity = '0';          // Ziel: Unsichtbar.
+
+                // Warte auf das Ende der clip-path Transition, DANN entfernen.
+                allTransitions.push(this._waitForTransition(closingTabClone, 'clip-path').then(() => {
+                    // Sicherstellen, dass das Element noch da ist, bevor es entfernt wird.
+                    if (closingTabClone.parentElement) {
+                        closingTabClone.remove();
+                    }
                 }));
             }
 
-            // Play 4: Wisch-Animation (Anforderung 4)
+            // Play 4: Wisch-Rein-Animation für aktivierten Tab starten.
             if (activatingTabEl) {
-                // Löst die Wisch-Animation aus (ausrollen)
-                activatingTabEl.classList.add('tab-wipe-play');
-                allTransitions.push(this._waitForTransition(activatingTabEl, 'clip-path'));
+                activatingTabEl.classList.add('tab-wipe-play'); // Startet die Animation.
+                allTransitions.push(this._waitForTransition(activatingTabEl, 'clip-path')); // Warten bis fertig.
             }
 
-            // Aufräumen, wenn alle Animationen fertig sind
+            // Play 5: Wisch-Raus-Animation für deaktivierten Tab starten.
+            if (deactivatingTabEl) {
+                deactivatingTabEl.classList.add('tab-wipe-out-play'); // Startet die Animation.
+                allTransitions.push(this._waitForTransition(deactivatingTabEl, 'clip-path')); // Warten bis fertig.
+            }
+
+            // --- Aufräumen nach Abschluss ALLER Animationen ---
             Promise.all(allTransitions).then(() => {
+                // Entferne Inline-Styles und Klassen von den verschobenen Elementen.
                 elementsToAnimate.forEach(el => {
                     el.style.transform = '';
                     el.style.transition = '';
                 });
+
+                // Entferne Inline-Styles vom geöffneten Element.
                 if (openingTabEl) {
-                    openingTabEl.style.transition = '';
-                    openingTabEl.style.clipPath = '';
-                    openingTabEl.style.maxWidth = '';
+                    openingTabEl.style.transition = ''; openingTabEl.style.clipPath = ''; openingTabEl.style.maxWidth = ''; openingTabEl.style.paddingLeft = ''; openingTabEl.style.paddingRight = ''; openingTabEl.style.marginRight = ''; openingTabEl.style.opacity = '';
                 }
+
+                // Entferne Klassen vom aktivierten Wisch-Element + Workaround.
                 if (activatingTabEl) {
-                    activatingTabEl.classList.remove('tab-wipe-init');
-                    activatingTabEl.classList.remove('tab-wipe-play');
+                    activatingTabEl.classList.remove('tab-wipe-init', 'tab-wipe-play');
+                    // Workaround, falls Hover-Effekt nach Animation nicht geht:
+                    const beforeStyle = getComputedStyle(activatingTabEl, '::before');
+                    if (beforeStyle.transition.includes('clip-path')) { // Prüfe ob die Transition noch aktiv ist
+                        activatingTabEl.style.setProperty('--temp-transition-override', 'none', 'important');
+                        activatingTabEl.offsetHeight; // force reflow
+                        activatingTabEl.style.removeProperty('--temp-transition-override');
+                    }
                 }
+
+                // Entferne Klassen vom deaktivierten Wisch-Element + Workaround.
+                if (deactivatingTabEl) {
+                    deactivatingTabEl.classList.remove('tab-wipe-out-init', 'tab-wipe-out-play');
+                    // Gleicher Workaround wie oben, falls nötig
+                    const beforeStyle = getComputedStyle(deactivatingTabEl, '::before');
+                    if (beforeStyle.transition.includes('clip-path')) {
+                        deactivatingTabEl.style.setProperty('--temp-transition-override', 'none', 'important');
+                        deactivatingTabEl.offsetHeight; // force reflow
+                        deactivatingTabEl.style.removeProperty('--temp-transition-override');
+                    }
+                }
+                // Der Ghost-Tab wird bereits in seinem eigenen Promise nach der Animation entfernt.
+            }).catch(error => {
+                console.error("Fehler nach den Tab-Animationen:", error);
+                // Notfall-Aufräumen, falls ein Promise rejected wurde
+                elementsToTrack.forEach(el => {
+                    if (el && el.style) {
+                        el.style.transform = ''; el.style.transition = ''; el.style.clipPath = ''; el.style.maxWidth = ''; el.style.paddingLeft = ''; el.style.paddingRight = ''; el.style.marginRight = ''; el.style.opacity = '';
+                    }
+                    if (el && el.classList) {
+                        el.classList.remove('tab-wipe-init', 'tab-wipe-play', 'tab-wipe-out-init', 'tab-wipe-out-play');
+                    }
+                });
+                if (closingTabClone && closingTabClone.parentElement) closingTabClone.remove();
             });
         });
     }
 
+    // _waitForTransition bleibt unverändert (mit Fallback-Timeout)
     _waitForTransition(element, propertyName = null) {
         return new Promise(resolve => {
             const onEnd = (event) => {
-                // Wenn wir auf eine bestimmte Eigenschaft warten (z.B. 'clip-path'),
-                // ignorieren wir andere 'transitionend'-Events.
-                if (propertyName && event.propertyName !== propertyName) {
-                    return;
+                if (event.target === element && (!propertyName || event.propertyName === propertyName)) {
+                    element.removeEventListener('transitionend', onEnd);
+                    resolve();
                 }
-                element.removeEventListener('transitionend', onEnd);
-                resolve();
             };
             element.addEventListener('transitionend', onEnd);
+            // Fallback Timeout
+            setTimeout(() => {
+                element.removeEventListener('transitionend', onEnd);
+                resolve();
+            }, this.ANIM_DURATION_MS + 100);
         });
     }
 
