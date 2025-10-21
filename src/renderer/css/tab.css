@@ -1,57 +1,189 @@
-/* src/renderer/css/tab.css */
+/* ==========================================================================
+   1. TAB BAR & LAYOUT
+   ========================================================================== */
 
-/* --- TAB LAYOUT --- */
 .tab-area-wrapper {
-    flex-grow: 1; /* Nimmt allen verfügbaren Platz ein */
-    min-width: 0; /* Erlaubt dem Element zu schrumpfen */
-    overflow: hidden; /* Versteckt überstehende Inhalte */
-    display: flex; /* Richtet Tab-Leiste und Button nebeneinander aus */
-    align-items: center;
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 
 .tab-bar {
-    display: inline-flex;
-    align-items: center;
-    height: 100%;
-    padding: 0 8px 0 0; /* Behält den perfekten linken Abstand bei */
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  /* WICHTIG: gap entfernt, padding angepasst für margin-Logik */
+  padding: 0 8px;
+  /* gap: 6px; <-- ENTFERNT */
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .tab-bar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
-/* Dynamische Fade-Effekte */
+/* Fade-Effekte (unverändert) */
 .tab-bar.is-scrolled-start.is-scrolled-end {
-    -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
-    mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 20px), transparent);
 }
+
 .tab-bar.is-scrolled-start:not(.is-scrolled-end) {
-    -webkit-mask-image: linear-gradient(to right, transparent, black 20px);
-    mask-image: linear-gradient(to right, transparent, black 20px);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 20px);
+  mask-image: linear-gradient(to right, transparent, black 20px);
 }
+
 .tab-bar.is-scrolled-end:not(.is-scrolled-start) {
-    -webkit-mask-image: linear-gradient(to left, transparent, black 20px);
-    mask-image: linear-gradient(to left, transparent, black 20px);
+  -webkit-mask-image: linear-gradient(to left, transparent, black 20px);
+  mask-image: linear-gradient(to left, transparent, black 20px);
 }
+
+/* ==========================================================================
+   2. TAB ITEM & COMPONENTS
+   ========================================================================== */
+
+.tab-item {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  transform-origin: center center;
+
+  /* NEU: WICHTIG für Wisch-Animation (Problem 3) */
+  /* Der Tab selbst ist transparent, der Hintergrund kommt vom ::before */
+  background-color: transparent !important;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  max-width: 250px;
+
+  /* WICHTIG: gap ersetzt durch margin-right (Problem 2) */
+  margin-right: 6px;
+
+  /* Basis-Transition (nur für Drag&Drop FLIP) */
+  /* Open/Close überschreibt dies temporär per JS */
+  transition: transform 0.18s ease-out;
+}
+
+/* NEU: Das ::before-Element ist jetzt der HINTERGRUND */
+.tab-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 6px;
+  z-index: 0;
+  /* Hinter dem Inhalt */
+
+  /* Standard: Inaktiv */
+  background-color: transparent;
+
+  /* Standard: Voll sichtbar (für Klick-Aktivierung) */
+  clip-path: inset(0 0 0 0);
+
+  /* Animiert den Hintergrund bei Klick/Hover */
+  transition: background-color 0.15s ease-out;
+}
+
+/* NEU: Text/Icons müssen über dem ::before-Hintergrund liegen */
+.tab-item>* {
+  position: relative;
+  z-index: 1;
+}
+
+.tab-filename {
+  font-size: 13px;
+  padding-right: 8px;
+  white-space: nowrap;
+  transition: color 0.15s ease-out;
+}
+
+.tab-dirty-marker {
+  font-weight: bold;
+  padding-right: 2px;
+}
+
+.tab-close-button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.2s, color 0.15s ease-out;
+  flex-shrink: 0;
+}
+
+.tab-close-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ==========================================================================
+   3. TAB STATES (ACTIVE, HOVER)
+   ========================================================================== */
+
+/* -- Inaktiver Tab (Standard) -- */
+.tab-item:not(.active) .tab-filename,
+.tab-item:not(.active) .tab-close-button {
+  color: var(--text-secondary);
+}
+
+/* -- Aktiver Tab -- */
+/* NEU: Hintergrund wird jetzt vom ::before gesetzt */
+.tab-item.active::before {
+  background-color: var(--tab-active-background);
+}
+
+.tab-item.active .tab-filename,
+.tab-item.active .tab-dirty-marker,
+.tab-item.active .tab-close-button {
+  color: var(--text-primary);
+}
+
+/* -- Hover-Zustand -- */
+/* NEU: Hover wird jetzt vom ::before gesetzt */
+.tab-item:not(.active):hover::before {
+  background-color: var(--background-hover-subtle);
+}
+
+.tab-item:hover .tab-close-button {
+  color: var(--text-primary);
+}
+
+.tab-close-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ==========================================================================
+   4. "NEUER TAB"-BUTTON
+   ========================================================================== */
 
 .new-tab-button {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    flex-shrink: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: var(--text-secondary);
-    cursor: pointer;
-    -webkit-app-region: no-drag;
-    transition: all 0.15s ease-out;
-    margin-left: 6px; 
-    margin-right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  /* WICHTIG: FLIP-Transition angepasst */
+  transition: all 0.15s ease-out, transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  margin-left: 6px;
+  margin-right: 8px;
 }
 
 .new-tab-button:hover {
@@ -64,106 +196,132 @@
   height: 18px;
 }
 
-.tab-item {
+/* ==========================================================================
+   5. DRAG & DROP
+   ========================================================================== */
+
+/* Unverändert */
+body.is-dragging {
+  user-select: none;
+  cursor: grabbing !important;
+}
+
+body.is-dragging .tab-item:not(.dragging),
+body.is-dragging .new-tab-button {
+  pointer-events: none;
+}
+
+/* Der "Ghost"-Tab, der an der Maus hängt */
+.tab-item.dragging {
+  z-index: 999;
+  pointer-events: none;
+  transition: none;
+  box-sizing: border-box;
+  /* WICHTIG: Muss wieder eine Hintergrundfarbe haben, da ::before nicht mitkopiert wird */
+  background-color: #363637 !important;
+}
+
+/* Gezogener Tab, der AKTIV war */
+.tab-item.dragging.was-active {
+  background-color: var(--tab-active-background) !important;
+}
+
+.tab-item.dragging.was-active .tab-filename,
+.tab-item.dragging.was-active .tab-close-button,
+.tab-item.dragging.was-active .tab-dirty-marker {
+  color: var(--text-primary);
+}
+
+/* Gezogener Tab, der INAKTIV war */
+.tab-item.dragging.was-inactive {
+  background-color: #363637 !important;
+}
+
+.tab-item.dragging.was-inactive .tab-filename,
+.tab-item.dragging.was-inactive .tab-close-button {
+  color: var(--text-secondary);
+}
+
+.tab-item.dragging.was-inactive .tab-dirty-marker {
+  color: var(--text-primary);
+}
+
+/* Platzhalter */
+.tab-placeholder {
+  background-color: transparent;
+  border-radius: 6px;
+  flex-shrink: 0;
+  /* WICHTIG: Muss margin haben (wird per JS gesetzt, aber als Fallback) */
+  margin-right: 6px;
+}
+
+/* OS Drop (unverändert) */
+.tab-area-wrapper.drag-over {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ==========================================================================
+   6. ANIMATIONEN FÜR ÖFFNEN & SCHLIESSEN (KOMPLETT NEU)
+   ========================================================================== */
+
+/* "Geist"-Tab für die Schließanimation (Anforderung 2) */
+.tab-ghost-exiting {
   display: flex;
   align-items: center;
   padding: 0 10px;
   height: 30px;
-  background-color: transparent;
   border-radius: 6px;
-  cursor: pointer;
-  -webkit-app-region: no-drag;
-  transition: background-color 0.15s ease-out;
-  transition: transform 0.2s ease-out;
-  flex-shrink: 0;
+  z-index: 998;
+  pointer-events: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  opacity: 1;
+  /* WICHTIG: Muss wie ein normaler Tab aussehen (transparent + ::before) */
+  background-color: transparent !important;
+  position: relative;
 }
 
-.tab-item.active {
-  background-color: var(--tab-active-background);
-}
-
-.tab-item:not(.active):hover {
+.tab-ghost-exiting::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  z-index: 0;
+  /* Inaktiver Hintergrund (oder 'transparent') */
   background-color: var(--background-hover-subtle);
 }
 
-.tab-filename {
-  font-size: 13px;
-  padding-right: 8px;
-  white-space: nowrap;
+.tab-ghost-exiting>* {
+  position: relative;
+  z-index: 1;
 }
 
-.tab-item.active .tab-filename {
-  color: var(--text-primary);
-}
-
-.tab-item:not(.active) .tab-filename {
+.tab-ghost-exiting .tab-filename,
+.tab-ghost-exiting .tab-close-button {
   color: var(--text-secondary);
 }
 
-.tab-dirty-marker {
-  font-weight: bold;
-  padding-right: 2px;
+.tab-ghost-exiting .tab-dirty-marker {
   color: var(--text-primary);
 }
 
-.tab-close-button {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: var(--text-secondary);
-  transition: background-color 0.2s;
+
+/* KORRIGIERTE Wisch-Animation (Anforderung 4) */
+
+/* 1. Setup-Klasse (wird von JS gesetzt) */
+/* Setzt den Startpunkt (eingerollt) OHNE Animation */
+.tab-item.tab-wipe-init::before {
+  background-color: var(--tab-active-background);
+  clip-path: inset(0 0 0 100%);
+  transition: none !important;
+  /* Wichtig: Keine Transition hier */
 }
 
-.tab-close-button svg {
-  width: 14px;
-  height: 14px;
+/* 2. Play-Klasse (wird von JS gesetzt) */
+/* Löst die Animation zum "ausrollen" aus */
+.tab-item.tab-wipe-play::before {
+  transition: clip-path 250ms cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  clip-path: inset(0 0 0 0);
 }
 
-.tab-item:hover .tab-close-button {
-  color: var(--text-primary);
-}
-
-.tab-close-button:hover {
-  background-color: rgba(255, 255, 255, 0.15);
-}
-
-
-/* --- STYLES FÜR MANUELLES DRAG & DROP --- */
-
-/* Verhindert Textauswahl und setzt den Cursor, wenn gezogen wird */
-body.is-dragging {
-    user-select: none;
-    cursor: grabbing !important;
-}
-
-/* Stil für den gezogenen Tab: Er schwebt über allem */
-.tab-item.dragging {
-    opacity: 0.9;
-    z-index: 999;
-    pointer-events: none; /* Wichtig, damit die Maus-Events den Container erreichen */
-    background-color: var(--tab-active-background);
-    transition: none;
-}
-
-/* Der Platzhalter für den gezogenen Tab */
-.tab-placeholder {
-    background-color: transparent;
-    border-radius: 6px;
-    flex-shrink: 0;
-    transition: width 0.2s ease-out;
-}
-
-/* Visuelles Feedback, wenn eine Datei vom OS über die Leiste gezogen wird */
-.tab-area-wrapper.drag-over {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* (BUGFIX) Verhindert, dass andere UI-Elemente auf Maus-Events reagieren,
-   während ein Tab gezogen wird. Löst das Tooltip- UND Cursor-Problem. */
-body.is-dragging .tab-item:not(.dragging),
-body.is-dragging .new-tab-button {
-    pointer-events: none;
-}
+/* Alte Keyframes werden nicht mehr benötigt */
